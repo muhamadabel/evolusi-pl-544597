@@ -1,0 +1,192 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main, dev]
+
+# ============================================================
+# PIPELINE BACKEND LARAVEL (Tugas 2)
+# build -> test -> staging -> production
+# production HANYA jalan dari branch main.
+# Push ke branch fitur tetap menjalankan build dan test.
+# ============================================================
+jobs:
+  backend-build:
+    name: backend / build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+
+      - name: Cache dependensi Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Pasang dependensi
+        run: composer install --prefer-dist --no-progress
+
+      - name: Simpan vendor/ sebagai artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vendor
+          path: vendor
+
+  backend-test:
+    name: backend / test
+    needs: backend-build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+
+      - name: Ambil artifact vendor/
+        uses: actions/download-artifact@v4
+        with:
+          name: vendor
+          path: vendor
+
+      - name: Siapkan environment testing
+        run: |
+          cp .env.example .env
+          php artisan key:generate --ansi
+
+      - name: Jalankan php artisan test
+        run: php artisan test
+
+  backend-staging:
+    name: backend / staging
+    needs: backend-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy ke server tiruan (placeholder)
+        run: echo "Deploy staging: composer install, migrate, cache — belum ke server sungguhan."
+
+  backend-production:
+    name: backend / production
+    needs: backend-test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # "required reviewer" diatur di Settings -> Environments -> production
+    # (Require reviewers: tambahkan akun dosen/asisten).
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      # Tujuh langkah deploy.sh (Pertemuan 03, slide 6), ditulis sebagai echo.
+      - name: Rencana deploy production
+        run: |
+          echo "1. php artisan down --retry=60        # kunci pintu: halaman pemeliharaan"
+          echo "2. git pull origin main               # ambil kode terbaru"
+          echo "3. composer install --no-dev --optimize-autoloader"
+          echo "4. php artisan migrate --force        # ubah skema basis data"
+          echo "5. php artisan config:cache && php artisan route:cache && php artisan view:cache"
+          echo "6. php artisan queue:restart          # muat ulang pekerja antrean"
+          echo "7. php artisan up                     # buka pintu kembali"
+
+  # ==========================================================
+  # PIPELINE FRONTEND VUE (Tugas 3)
+  # lint -> test -> build -> deploy
+  # deploy HANYA jalan dari branch main.
+  # Pull Request tetap menjalankan lint, test, dan build.
+  # ==========================================================
+  frontend-lint:
+    name: frontend / lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: npm ci
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+  frontend-test:
+    name: frontend / test
+    needs: frontend-lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: npm ci
+        run: npm ci
+
+      - name: Unit test Vitest (tanpa Laravel)
+        run: npm test
+
+  frontend-build:
+    name: frontend / build
+    needs: frontend-test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: npm ci
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Simpan dist/ sebagai artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: frontend/dist
+
+  frontend-deploy:
+    name: frontend / deploy
+    needs: frontend-build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ambil hasil build (dist/)
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      # Job deploy TIDAK menjalankan npm run build lagi —
+      # hasil build diambil murni dari artifact job sebelumnya.
+      - name: Tampilkan isi dist/ ke log
+        run: |
+          echo "Isi folder dist/ yang akan dideploy:"
+          ls -R dist/
+          echo "(Di sini nanti: unggah dist/ ke server hosting statis.)"
