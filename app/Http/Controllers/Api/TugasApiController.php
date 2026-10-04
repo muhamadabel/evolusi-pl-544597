@@ -12,10 +12,17 @@ class TugasApiController extends Controller
      * GET /api/tugas — daftar semua tugas dalam bentuk JSON.
      * Endpoint ini yang dipanggil frontend Vue lewat VITE_API_URL.
      */
-    public function index()
+    public function index(Request $request)
     {
+        $query = Tugas::orderBy('created_at', 'desc');
+
+        // Filter opsional: /api/tugas?selesai=1 atau ?selesai=0
+        if ($request->has('selesai')) {
+            $query->where('selesai', $request->boolean('selesai'));
+        }
+
         return response()->json([
-            'data' => Tugas::orderBy('created_at', 'desc')->get(),
+            'data' => $query->get(),
         ]);
     }
 
