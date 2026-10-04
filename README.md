@@ -1,4 +1,4 @@
-# evolusi-pl-NIM
+# evolusi-pl-544597
 
 Aplikasi web sederhana (Laravel + Vue 3) untuk praktikum **Konstruksi & Evolusi Perangkat Lunak**.
 
@@ -19,7 +19,7 @@ Aplikasi web sederhana (Laravel + Vue 3) untuk praktikum **Konstruksi & Evolusi 
 ## Tahap 0 — Akun & repo (Tugas 1, wajib pakai akunmu sendiri)
 
 1. Cek email GitHub kamu, cari undangan organisasi **KEPL2026**, klik Accept.
-2. Bikin repo **baru** di akun kamu, nama persis: `evolusi-pl-NIM` (ganti NIM), visibilitas **Public**
+2. Bikin repo **baru** di akun kamu, nama persis: `evolusi-pl-544597` (ganti NIM), visibilitas **Public**
    (supaya kuota GitHub Actions gratis).
 3. Push kode dari repo ini ke situ dengan riwayat commit Conventional Commits, minimal 5, contoh urutan:
    - `feat: inisialisasi aplikasi Laravel dengan CRUD tugas`
