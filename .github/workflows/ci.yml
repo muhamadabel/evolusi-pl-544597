@@ -70,7 +70,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Deploy ke server tiruan (placeholder)
-        run: echo "Deploy staging: composer install, migrate, cache — belum ke server sungguhan."
+        run: |
+          echo "Deploy staging - composer install, migrate, cache (belum ke server sungguhan)."
 
   backend-production:
     name: backend / production

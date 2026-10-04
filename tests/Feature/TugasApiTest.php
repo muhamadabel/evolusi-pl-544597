@@ -63,4 +63,16 @@ class TugasApiTest extends TestCase
         $response->assertStatus(204);
         $this->assertDatabaseMissing('tugas', ['id' => $tugas->id]);
     }
+
+    public function test_bisa_memfilter_tugas_berdasarkan_status_selesai(): void
+    {
+        Tugas::factory()->create(['selesai' => true]);
+        Tugas::factory()->count(2)->create(['selesai' => false]);
+
+        $selesai = $this->getJson('/api/tugas?selesai=1');
+        $selesai->assertStatus(200)->assertJsonCount(1, 'data');
+
+        $belum = $this->getJson('/api/tugas?selesai=0');
+        $belum->assertStatus(200)->assertJsonCount(2, 'data');
+    }
 }
